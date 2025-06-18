@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GameVerse – Заявки адміністраторів</title>
   <link rel="stylesheet" href="style.css" />
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-  <script type="module" src="firebase-config.js"></script>
   <style>
     body {
       background: #0f0f1b;
@@ -34,24 +31,30 @@
       border: none;
       cursor: pointer;
     }
+    .approve { background: #00ffb3; color: #000; }
+    .reject { background: #ff4d4d; color: #fff; }
   </style>
-</head>
-<body>
-  <h1>Заявки на адміністрування</h1>
-  <div id="requestList">Завантаження...</div>
 
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore,
+      collection,
+      onSnapshot,
+      updateDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     import { firebaseConfig } from './firebase-config.js';
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const requestList = document.getElementById("requestList");
 
-    async function loadRequests() {
+    function renderRequests(snapshot) {
       requestList.innerHTML = "";
-      const snapshot = await getDocs(collection(db, "adminRequests"));
+
       if (snapshot.empty) {
         requestList.textContent = "Немає заявок.";
         return;
@@ -69,18 +72,16 @@
 
         const approveBtn = document.createElement("button");
         approveBtn.textContent = "✅ Підтвердити";
+        approveBtn.className = "approve";
         approveBtn.onclick = async () => {
           await updateDoc(doc(db, "adminRequests", docSnap.id), { status: "підтверджено" });
-          alert("✅ Запит підтверджено.");
-          loadRequests();
         };
 
         const rejectBtn = document.createElement("button");
         rejectBtn.textContent = "❌ Відхилити";
+        rejectBtn.className = "reject";
         rejectBtn.onclick = async () => {
           await updateDoc(doc(db, "adminRequests", docSnap.id), { status: "відхилено" });
-          alert("❌ Запит відхилено.");
-          loadRequests();
         };
 
         div.appendChild(approveBtn);
@@ -89,7 +90,13 @@
       });
     }
 
-    loadRequests();
+    // 🔁 Реальне оновлення без перезавантаження
+    const requestRef = collection(db, "adminRequests");
+    onSnapshot(requestRef, renderRequests);
   </script>
+</head>
+<body>
+  <h1>Заявки на адміністрування</h1>
+  <div id="requestList">Завантаження...</div>
 </body>
 </html>
